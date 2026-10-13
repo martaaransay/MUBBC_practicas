@@ -1,4 +1,4 @@
-name: practicas
+name: TFM
 channels:
   - conda-forge
   - bioconda
