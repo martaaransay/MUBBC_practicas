@@ -1,0 +1,21 @@
+name: practicas
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - conda-forge::quarto
+  - bioconda::integron_finder>=2.0.3
+  - bioconda::seqkit
+  - bioconda::samtools
+  - conda-forge::gcc  
+  - conda-forge::make     
+  - conda-forge::ncbi-datasets-cli
+  - pandas
+  - bioconda::skani
+  - drep
+  - openpyxl
+  - blast
+  - hmmer
+  - conda-forge::matplotlib-venn

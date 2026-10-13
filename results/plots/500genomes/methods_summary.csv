@@ -1,0 +1,4 @@
+method,general_hits,unique_hits,time_s
+BLAST,1544,1105,2.5540103912353516
+IntegronFinder2,1201,1070,161884.99930238724
+Integron-filtering+IF2,929,827,45644.17760205269

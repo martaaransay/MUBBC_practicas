@@ -1,0 +1,11 @@
+genome,path,BLAST_hits,IF2_hits,IntFilt_IF2_hits,in_BLAST,in_IF2,in_IntFilt_IF2
+000599625.1,../data/2genomes/Ecoli/Ecoli/ncbi_dataset/data/GCF_000599625.1/GCF_000599625.1_ASM59962v1_genomic.fna,0,0,0,False,False,False
+000599645.1,../data/2genomes/Ecoli/Ecoli/ncbi_dataset/data/GCF_000599645.1/GCF_000599645.1_ASM59964v1_genomic.fna,0,0,0,False,False,False
+000695855.3,../data/2genomes/Acinetobacter/Acinetobacter/ncbi_dataset/data/GCF_000695855.3/GCF_000695855.3_ASM69585v3_genomic.fna,0,0,0,False,False,False
+000708775.1,../data/2genomes/Acinetobacter/Acinetobacter/ncbi_dataset/data/GCF_000708775.1/GCF_000708775.1_ASM70877v1_genomic.fna,0,0,0,False,False,False
+000709285.1,../data/2genomes/Pseudomonas/Pseudomonas/ncbi_dataset/data/GCF_000709285.1/GCF_000709285.1_ASM70928v1_genomic.fna,0,0,0,False,False,False
+000710075.1,../data/2genomes/Klebsiella/Klebsiella/ncbi_dataset/data/GCF_000710075.1/GCF_000710075.1_KlePne1.0_genomic.fna,1,1,1,True,True,True
+000710095.1,../data/2genomes/Klebsiella/Klebsiella/ncbi_dataset/data/GCF_000710095.1/GCF_000710095.1_ASM71009v1_genomic.fna,0,0,0,False,False,False
+000737795.1,../data/2genomes/Pseudomonas/Pseudomonas/ncbi_dataset/data/GCF_000737795.1/GCF_000737795.1_PA_ST235_v.05_genomic.fna,1,1,1,True,True,True
+041937165.1,../data/2genomes/Enterobacter/Enterobacter/ncbi_dataset/data/GCA_041937165.1/GCA_041937165.1_UNISA_Eadel_1.0_genomic.fna,2,1,1,True,True,True
+054902195.1,../data/2genomes/Enterobacter/Enterobacter/ncbi_dataset/data/GCF_054902195.1/GCF_054902195.1_ASM5490219v1_genomic.fna,0,0,0,False,False,False
