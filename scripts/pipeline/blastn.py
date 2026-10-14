@@ -13,7 +13,7 @@ from pipeline.metadata_info import add_genome_metadata
 
 # --------Definition of functions
 #------------------------ Function to run blastn
-def run_blastn(query, output, db, max_target, evalue_threshold = 10):
+def run_blastn(query, output, db, log_dir, max_target, evalue_threshold = 10):
     """
     Executes the blastn command with the specified query, output file, and database.
 
@@ -22,6 +22,7 @@ def run_blastn(query, output, db, max_target, evalue_threshold = 10):
     query (str): The path to the query fasta file.
     output (str): The path to the output file where results will be saved.
     db (str): The path to the blast database.
+    log_dir (str): The path to the directory to store logs.
     max_target (int): Maximum number of aligned sequences keeped into the results.
     evalue_threshold (int): E-value threshold.
                             Default to 10.
@@ -33,6 +34,8 @@ def run_blastn(query, output, db, max_target, evalue_threshold = 10):
     """
     # Creates the output directory to avoid errors
     os.makedirs(os.path.dirname(output), exist_ok=True)
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "blastn_errors.log")
     # Blastn command
     blast_cmd = ["blastn", "-query", query, # Query fasta file
                  "-db", db, # Blast database
@@ -40,6 +43,7 @@ def run_blastn(query, output, db, max_target, evalue_threshold = 10):
                  "-max_target_seqs", str(max_target), # Max number of aligned seqs to keep
                  "-evalue", str(evalue_threshold),
                  "-outfmt", "6"] # Output format 6 (tabular)
+    
     start = time.time() # Start time to measure execution time
     # Execute the command and handle errors
     print(f"Executing: \n{shlex.join(blast_cmd)}")
@@ -47,7 +51,11 @@ def run_blastn(query, output, db, max_target, evalue_threshold = 10):
         subprocess.run(blast_cmd, 
                        check = True, capture_output = True, text = True)
     except subprocess.CalledProcessError as e:
-        print(f"Error executing blastn:\n{e.stderr}")
+        print(f"Error executing blastn.\nDetails in {log_file}.")
+        # Error stored into the log file
+        with open(log_file, "a") as file:
+            file.write("-------------- blastn log --------------\n")
+            file.write(f"{e.stderr}\n")
         return
 
     total_time = time.time() - start # End time to measure execution time

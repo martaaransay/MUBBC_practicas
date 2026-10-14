@@ -11,7 +11,7 @@ from pipeline.useful_funct import unique_genome_files
 
 # --------Definition of functions
 #------------------------ Function to download genomes for specific species
-def download_species_genomes(species, outdir, flags, target_num = None):
+def download_species_genomes(species, outdir, flags, log_dir, target_num = None):
     """
     Uses the download_genomes function to download genomes for each species in the species dictionary.
     
@@ -20,6 +20,7 @@ def download_species_genomes(species, outdir, flags, target_num = None):
     species (dict): A dictionary where keys are short names and values are long names of species.
     outdir (str): The output directory where genomes will be downloaded.
     flags (dict): Flags for the genome download.
+    log_dir (str): Directory where logs will be saved.
     target_num (int): The target number of genomes to download for each species.
                       Default to None.
 
@@ -38,6 +39,7 @@ def download_species_genomes(species, outdir, flags, target_num = None):
         if target_num:
             dir = download_genomes(source = "taxon",
                             name = long_name, # Species to download
+                            log_dir = log_dir,
                             quality_filter_flag = True,
                             filename = path,
                             flags = flags,
@@ -46,6 +48,7 @@ def download_species_genomes(species, outdir, flags, target_num = None):
         else:
             dir = download_genomes(source = "taxon",
                             name = long_name, # Species to download
+                            log_dir = log_dir,
                             quality_filter_flag = True,
                             filename = path,
                             flags = flags)

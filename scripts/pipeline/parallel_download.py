@@ -65,7 +65,7 @@ def splitting_fetch_file(recovery_file, n_split = 100):
     return splits, recovery
 
 #------------------------ Function to execute datasets rehydrate of a splitted fetch file
-def processing(directory, n_split = 100, 
+def processing(directory, log_dir, n_split = 100, 
                max_workers = 18, n_tries = 5):
     """
     Processes the genome downloads in chunks.
@@ -73,6 +73,7 @@ def processing(directory, n_split = 100,
     Args
     ------
     directory (str): The target root directory for the genomes.
+    log_dir (str): Directory where logs will be saved.
     n_split (int): The number of genomes to download per batch.
     max_workers (int): Number of concurrent connections for the datasets tool.
     n_tries (int): Maximum number of execution attempts per chunk.
@@ -93,7 +94,10 @@ def processing(directory, n_split = 100,
     current_fetch_file = os.path.join(fetch_directory, "fetch.txt")
     # Path to a failed file (with the lines that have falied)
     failed_file = os.path.join(fetch_directory, "failed.txt")
-
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "rehydrate_errors.log")
+    
+    
     # Command to execute datasets rehydrate
     rehydrate_cmd = ["datasets", "rehydrate", 
                      "--directory", directory, # Directory to store genomes
@@ -118,25 +122,33 @@ def processing(directory, n_split = 100,
                 success = True
                 break
             except subprocess.CalledProcessError as e:
-                print(f"Error executing datasets rehydrate:\n{e.stderr}.\nNumber of try: {n}.")       
+                print(f"Error executing datasets rehydrate on try {n}/{n_tries}.\nDetails in {log_file}.")
+                # Error stored into the log file
+                with open(log_file, "a") as file:
+                    file.write("-------------- datasets rehydrate log --------------")
+                    file.write(f"try {n}/{n_tries}")
+                    file.write("----------------------------------------------------")
+                    file.write(f"{e.stderr}\n")
                 
         if not success: 
+            print(f"Chunk failed after {n_tries} tries")
             with open(failed_file, "a") as f:
                 f.writelines(splitted)
         
         # Writes the rest of the lines into the recovery file
         with open(recovery_file, "w") as f:
             f.writelines(recovery)
-        
+
     # If there were failed splits, writes them into the failed file to continue the execution
-    print(">>>>>>>>>>>>>>WARNING: FAILED SPLITS IN THE REHYDRATATION PROCCESS")
     if os.path.isfile(failed_file):
+        print(f">>> WARNING: failed splits in {directory}")
         os.replace(failed_file, recovery_file)
-        return False    
-    return True
+        return False
+    return True 
+
 
 #------------------------ Function to process several datasets rehydrate 
-def process_all(dirs, total_workers = 18, 
+def process_all(dirs, log_dir, total_workers = 18, 
                 n_split = 100, n_tries = 5):
     """
     Processes multiple species directories concurrently using a thread pool.
@@ -144,6 +156,7 @@ def process_all(dirs, total_workers = 18,
     Args
     ------
     dirs (dict): A dictionary where keys are species names and values are directory paths.
+    log_dir (str): Directory where logs will be saved.
     total_workers (int): Total number of workers available to distribute across all species.
     n_split (int): The chunk size or number of splits to pass to the processing function.
     n_tries (int): The maximum number of retry attempts for processing.
@@ -166,7 +179,7 @@ def process_all(dirs, total_workers = 18,
         tasks = {}  # Dictionary to store the tasks for each specie
         for specie, directory in dirs.items():
             # Submit executes the function using a free thread
-            fut_task = executor.submit(processing, directory, n_split, per_dir, n_tries)
+            fut_task = executor.submit(processing, directory, log_dir, n_split, per_dir, n_tries)
             # fut_task is a "Future"
             # Stores the task and its specie
             tasks[fut_task] = specie

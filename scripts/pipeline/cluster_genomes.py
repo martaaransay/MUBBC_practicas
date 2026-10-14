@@ -1,14 +1,12 @@
 # Import libraries 
 import subprocess
-import shlex
 import os
 import csv
 import glob
 
 # --------Definition of functions
 #------------------------ Function to run CheckM2 using the conda environment
-def run_checkm2(genomes_paths, 
-                out_dir,
+def run_checkm2(genomes_paths, out_dir, log_dir,
                 genome_ext = "fna", 
                 lowmem = None, 
                 threads = 4):
@@ -19,6 +17,7 @@ def run_checkm2(genomes_paths,
     ------
     genomes_paths (list): List of paths to the input genome files.
     out_dir (str): Path to the output directory where results will be saved.
+    log_dir (str): Directory where logs will be saved.
     genome_ext (str, optional): File extension of the input genome files. 
                                 Defaults to "fna".
     lowmem (bool, optional): If provided and evaluates to True, runs CheckM2 in low memory mode. 
@@ -36,6 +35,9 @@ def run_checkm2(genomes_paths,
     ## FIXME: Y TMB LA DATABASE DE DIAMOND
     # subprocess.run(["conda", "run", "-n", "checkm2", "checkm2", "database", "--download"], check=True)
     
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "cluster_checkm2_errors.log")
+
     # Command to run CheckM2
     checkm2_cmd = ["checkm2", "predict", 
                    "--threads", str(threads),
@@ -55,7 +57,12 @@ def run_checkm2(genomes_paths,
         subprocess.run(conda_checkm2_cmd, capture_output=True, text=True, check=True)
     
     except subprocess.CalledProcessError as e:
-        print(f"Error executing checkm2 predict:\n{e.stderr}")
+        print(f"Error executing checkm2 predict.\nDetails in {log_file}.")
+        # Error stored into the log file
+        with open(log_file, "a") as file:
+            file.write("-------------- checkm2 log --------------")
+            file.write("\n")
+            file.write(f"{e.stderr}\n")
         return None
     
     # Path to the checkm2 report
@@ -102,8 +109,7 @@ def checkm2_to_genomeinfo(quality_report_tsv, genome_info_csv, genome_ext = "fna
     return genome_info_csv
 
 #------------------------ Function to run dRep 
-def cluster_genomes(genomes_paths,
-                    adapted_file, 
+def cluster_genomes(genomes_paths, adapted_file, log_dir,
                     threshold = 0.99,
                     threads = 1,
                     length = 50000,
@@ -119,6 +125,7 @@ def cluster_genomes(genomes_paths,
     ------
     genomes_paths (list): List of paths to the input genome files.
     adapted_file (str): Reference file path used to determine the output directory structure.
+    log_dir (str): Directory where log files will be saved.
     threshold (float, optional): Average Nucleotide Identity (ANI) threshold for secondary clustering. 
                                  Defaults to 0.99.
     threads (int, optional): Number of threads to use for CheckM2 and dRep. 
@@ -143,7 +150,9 @@ def cluster_genomes(genomes_paths,
     """
     # Parental directory
     parental_dir = adapted_file.replace("/ncbi_dataset/data", "") 
-        
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "dRep_errors.log")
+
     # Name of the folder with the clustering threshold
     folder_name = f"clustering_{threshold}"
     
@@ -199,9 +208,16 @@ def cluster_genomes(genomes_paths,
         subprocess.run(dRep_cmd, capture_output=True, text=True, check=True)
 
     except subprocess.CalledProcessError as e:
-        print(f"Error executing dRep dereplicate:\n{e.stderr}")
+        print(f"Error executing dRep dereplicate.\nDetails in {log_file}.")
+        # Error stored into the log file
+        with open(log_file, "a") as file:
+            file.write("-------------- dRep dereplicate log --------------")
+            file.write("\n")
+            file.write(f"{e.stderr}\n")
         return
+    
     # Get the new paths to the clustered genome files
-    genomes_path = os.path.join(out_dir, "dereplicated_genomes","*.fna")
+    genomes_path = os.path.join(out_dir, "dereplicated_genomes", "*.fna")
     genomes_path_glob = sorted(glob.glob(genomes_path))
+
     return genomes_path_glob

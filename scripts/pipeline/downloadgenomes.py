@@ -104,6 +104,7 @@ def taxon_acc_flag(source, # taxon | accession | inputfile
 #------------------------ Function to filter genomes
 def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(source, name) function
                            filename, # Filename to keep the same directory
+                           log_dir,
                            min_n50 = 2000, 
                            max_contamination = 5, 
                            min_completeness = 90,
@@ -118,6 +119,7 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
     source (str): Source type for the query.
     name (str): Value or identifier associated with the source.
     filename (str): Name of the resulting .zip file. 
+    log_dir (str): Directory where logs files will be saved.
     min_n50 (int, optional): Minimum acceptable value for the scaffold N50. 
                                    Default is 2000.
     max_contamination (float | int, optional): Maximum tolerated contamination percentage according to CheckM. 
@@ -135,50 +137,68 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
     accessions_tuple (tuple): Tuple with the generated file name if there are genomes that pass the filters
                               None if there are no valid results.
     """
+    print("Filtering by quality metrics genomes.")
+
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "datasets_summary_errors.log")
+
     if not flags: # If no flags were added, empty list
         flags = []
+
     # To get the JSON with the genome data 
     summary_cmd = ["datasets", "summary", "genome", 
                     *taxon_acc_flag(source, name), *flags, "--as-json-lines"]
     
     print(f"Executing: \n{shlex.join(summary_cmd)}")
     valid_accs = [] # List to store valid accessions 
+    control_stop = False # Flag to control if the execution is early stopped
+
     try:
-        # Start the process 
-        process = subprocess.Popen(summary_cmd, 
-                                   stdout = subprocess.PIPE, # Capture the output
-                                   text = True) # Returns the output as text instead of bytes
-        
-        for line in process.stdout: # Reads the output line by line
-            if not line.strip(): continue # Skips empty lines
-            datos = json.loads(line) # Deserialization
-            acc = datos.get("accession") # Get the accession
-                
-            # Quality metrics:
-            #------------------- N50
-            assembly_stats = datos.get("assembly_stats", {}) # Safely get stats (if not present, empty dict)
-            n50 = assembly_stats.get("scaffold_n50", 0)
+        with open(log_file, "a") as file:
+            # Flush the buffer so the header is written to the file before
+            file.write("-------------- datasets summary log --------------\n")
+            file.flush()
+
+            # Start the process 
+            process = subprocess.Popen(summary_cmd, 
+                                    stdout = subprocess.PIPE, # Capture the output
+                                    stderr = file,
+                                    text = True) # Returns the output as text instead of bytes
             
-            #------------------- CheckM info
-            checkm_info = datos.get("checkm_info", {})
-            # If there is no checkm info, the default values are set
-            # Contamination 
-            contamination = checkm_info.get("contamination", 5) 
-            # Completeness
-            completeness = checkm_info.get("completeness", 90) 
+            for line in process.stdout: # Reads the output line by line
+                if not line.strip(): continue # Skips empty lines
+                datos = json.loads(line) # Deserialization
+                acc = datos.get("accession") # Get the accession
+                    
+                # Quality metrics:
+                #------------------- N50
+                assembly_stats = datos.get("assembly_stats", {}) # Get stats (if not present, empty dict)
+                n50 = assembly_stats.get("scaffold_n50", 0)
+                
+                #------------------- CheckM info
+                checkm_info = datos.get("checkm_info", {})
+                # If there is no checkm info, the default values are set
+                # Contamination 
+                contamination = checkm_info.get("contamination", 5) 
+                # Completeness
+                completeness = checkm_info.get("completeness", 90) 
 
-            # Check if it meets the selected filters 
-            if n50 >= min_n50 and contamination <= max_contamination and completeness >= min_completeness:
-                valid_accs.append(acc)
-                # If the number of accessions exceeds twice the target number, terminate the process to avoid unnecessary processing
-                if target_num and len(valid_accs) >= (target_num * 2): # twice to allow random sampling
-                    process.terminate() # Stop the process
-                    break
+                # Check if it meets the selected filters 
+                if n50 >= min_n50 and contamination <= max_contamination and completeness >= min_completeness:
+                    valid_accs.append(acc)
+                    # If the number of accessions exceeds twice the target number, terminate the process to avoid unnecessary processing
+                    if target_num and len(valid_accs) >= (target_num * 2): # twice to allow random sampling
+                        control_stop = True 
+                        process.terminate() # Stop the process
+                        break
 
-        process.wait() # Wait for the process to finish
-
+            process.wait() # Wait for the process to finish
+        if process.returncode != 0 and not control_stop:
+            print(f"Error executing datasets summary.\nDetails in {log_file}.")
+            return
+        
     except Exception as e: 
-        print(f"Error executing datasets summary:\n{e}")
+        print(f"Error executing datasets summary because python failed.\nDetails:\n{e}.")
         return
 
     if not valid_accs:
@@ -206,12 +226,13 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
     return accessions_tuple
 
 ##------------------------ Function to unzip genomes
-def unzip(filename = "ncbi_dataset.zip"): 
+def unzip(log_dir, filename = "ncbi_dataset.zip"): 
     """
     Unzips an NCBI ZIP file.
 
     Args
     -------
+    log_dir (str): Directory where log files will be saved.
     filename (str, optional): Path to the ZIP file to decompress. 
                               Default is "ncbi_dataset.zip".
     
@@ -224,7 +245,9 @@ def unzip(filename = "ncbi_dataset.zip"):
         raise FileNotFoundError(f"The file {filename} was not found")
 
     ############# ------------------- unzip
-   
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "unzip_errors.log")
+
     out_dir = os.path.dirname(filename) or "."  # If there is no path in the filename, returns "."
     new_file = os.path.basename(filename)
     new_folder = os.path.splitext(new_file)[0]
@@ -236,21 +259,26 @@ def unzip(filename = "ncbi_dataset.zip"):
                  "-o", # Overwrite files to avoid errors
                  filename,
                  "-d", target_dir] # Directory where it is unzipped
-    
-    print(f"Executing: \n{shlex.join(unzip_cmd)}")
+    print("Unzipping the downloaded genomes.\n")
+    print(f"Executing: \n{shlex.join(unzip_cmd)}\n")
     try:
         subprocess.run(unzip_cmd, 
                        check = True, # Check for errors
                        capture_output = True, # Capture the output (stdout + stderr)
                        text = True)
-    except subprocess.CalledProcessError as e: # If the command fails, print the error message
-        print(f"Error executing unzip:\n{e.stderr}")
+    except subprocess.CalledProcessError as e: 
+        print(f"Error executing unzip.\nDetails in {log_file}.")
+        # Error stored into the log file
+        with open(log_file, "a") as file:
+            file.write("-------------- unzip log --------------\n")
+            file.write(f"{e.stderr}\n")
         return None
     return target_dir
 
 
 ##------------------------ Function to download genomes
 def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, name) function
+                     log_dir,
                      quality_filter_flag = False, # Flag to filter by quality metrics is needed
                      filename = "ncbi_dataset.zip", # Name of the file that will contain the genomes 
                                                   # Can have a path to specify a target directory
@@ -266,6 +294,7 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
     --------
     source (str): Source type for the query.
     name (str): Value or identifier associated with the source.
+    log_dir (str): Directory where log files will be saved.
     quality_filter_flag (bool, optional): If evaluates to True, executes quality_filter_genomes() function.
                                           Default is False.
     filename (str, optional): Name of the resulting .zip file.  
@@ -284,6 +313,8 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
     target_dir (str): Path to the directory where the ZIP file was decompressed.
                       If the file does not exist or an error occurs, returns None.
     """
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "datasets_download_errors.log")
     # Check that the directories exist to prevent errors
     out_dir = os.path.dirname(filename)
     if out_dir: # Prevents errors if the path has no folders 
@@ -320,8 +351,14 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
             break
         # Capture the exception
         except subprocess.CalledProcessError as e:
-            print(f"Error executing datasets download:\n{e.stderr}.\nNumber of try: {n}.")
-            
+            print(f"Error executing datasets download on try {n}/{n_tries}.\nDetails in {log_file}.")
+            # Error stored into the log file
+            with open(log_file, "a") as file:
+                file.write("-------------- datasets download log --------------")
+                file.write(f"try {n}/{n_tries}")
+                file.write("----------------------------------------------------")
+                file.write(f"{e.stderr}\n")
+                
             # The created directories are removed (provided they are completely empty)
             if n == n_tries:
                 if out_dir and os.path.exists(out_dir):
@@ -330,7 +367,7 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
                         os.removedirs(out_dir) 
                 return None
         
-    target_dir = unzip(filename) # Executes unzip function to decompress the ZIP file
+    target_dir = unzip(log_dir, filename) # Executes unzip function to decompress the ZIP file
     if not target_dir: # If the unzip function fails, return None
         return None
     
