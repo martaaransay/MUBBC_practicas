@@ -32,6 +32,7 @@ def output_integronfinder(genome_acc, directory):
 def Integron_Finder(genome_path, # Path to the genome
                     genome_acc, # Genome accession name
                     outdir,  # Output directory for the results
+                    log_dir,
                     # Boolean arguments:
                     palindromes = False, # Keep palindromic versions (--keep-palindromes)
                     eagle_eyes = False, # More sensitive search argument (--eagle-eyes)
@@ -53,6 +54,7 @@ def Integron_Finder(genome_path, # Path to the genome
     genome_path (str): Full path to the input genome file.
     genome_acc (str): Accession name of the genome. 
     outdir (str): Path to the directory where the results will be saved.
+    log_dir (str): Directory where log files are saved.
     palindromes (bool, optional): Keeps the palindromic versions of the attC sites (--keep-palindromes). 
                                   Defaults to False.
     eagle_eyes (bool, optional): Reduces the noise threshold to search for hard-to-detect elements (--eagle-eyes). 
@@ -77,6 +79,9 @@ def Integron_Finder(genome_path, # Path to the genome
     gbk_files (list): List of the resulting .gbk files after executing IntegronFinder2.
                       Returns None if an error occurs during execution.
     """
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "unzip_errors.log")
+
     # Set to 4 the max number of cpu (as recommended by IntegronFinder2)
     if cpu > 4: cpu = 4
     # IntegronFinder2 command
@@ -112,7 +117,11 @@ def Integron_Finder(genome_path, # Path to the genome
         subprocess.run(integronfinder_cmd, 
                        check = True, capture_output = True, text = True)
     except subprocess.CalledProcessError as e:
-        print(f"Error executing IntegronFinder2:\n{e.stderr}")
+        print(f"Error executing IntegronFinder2.\nDetails in {log_file}.")
+        # Error stored into the log file
+        with open(log_file, "a") as file:
+            file.write("-------------- IntegronFinder2 log --------------\n")
+            file.write(f"{e.stderr}\n")
         return None
         
     gbk_files = output_integronfinder(genome_acc, outdir)

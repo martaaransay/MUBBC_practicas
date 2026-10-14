@@ -49,6 +49,7 @@ def output_integronfiltering(outdir):
 
 def integron_filtering(genome_path, # Path to the genome
                        outdir, # Output directory for the results
+                       log_dir,
                        covariance_model = os.path.join(current_dir, "T3_integronfiltering/attCs.cm"), # default, defined covariance model
                        cutoff_bit = 20, # bit score cut-off for the covariance model (default in the .sh)
                        min_bp = 500, # minimum size of the recognized sequence in base pairs (default in the .sh)
@@ -61,6 +62,7 @@ def integron_filtering(genome_path, # Path to the genome
     ------
     genome_path (str): Path to the genome file to be processed.
     outdir (str): Output directory where the results will be saved.
+    log_dir (str): Directory where the log file will be saved.
     covariance_model (str, optional): Path to the covariance model file. 
                                       Defaults to 'T3_integronfiltering/attCs.cm'.
     cutoff_bit (int/float, optional): Bit score cut-off value for filtering. 
@@ -79,7 +81,8 @@ def integron_filtering(genome_path, # Path to the genome
     outdir_abs = os.path.abspath(outdir) # Absolute path of the output directory
     # Path of the script
     script_path = os.path.abspath("./scripts/pipeline/T3_integronfiltering/attC-screening.sh")
-
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "datasets_download_errors.log")
     # integron_filtering command 
     integronfiltering_cmd = [script_path, # path to the .sh
                              "-m", covariance_model, 
@@ -89,15 +92,20 @@ def integron_filtering(genome_path, # Path to the genome
                              "-b", str(cutoff_bit), 
                              "-l", str(min_bp), "-t", str(cpu)]
 
-
-    print(f"Executing: \n{shlex.join(integronfiltering_cmd)}")
+    
+    print(f"Executing: \n{shlex.join(integronfiltering_cmd)}\n")
 
     try:
         subprocess.run(integronfiltering_cmd, 
                        capture_output = True, text = True, check = True,
                        cwd = HattCI_dir) # To execute the .sh in the HattCI dir, where the attC-screening.sh is located
     except subprocess.CalledProcessError as e:
-        print(f"Error executing integron_filtering:\n{e.stderr}")
+        print(f"Error executing integron_filtering.\nDetails in {log_file}.")
+        # Error stored into the log file
+        with open(log_file, "a") as file:
+            file.write("-------------- integron_filtering log --------------\n")
+            file.write(f"{e.stderr}\n")
+        
         return genome_path # Initial path
     
     # Function to adapt the path to the new filtered genome

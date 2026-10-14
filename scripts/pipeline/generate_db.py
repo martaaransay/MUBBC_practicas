@@ -69,7 +69,7 @@ def generate_multifasta(path_to_genomes, outfile, flag_deduplicate = True):
                              Defaults to True.
     """
     # Process the path to genomes to evaluate the wildcard correctly
-    print("Generating multifasta")
+    print("Generating multifasta...\n")
     files_to_db = sorted(glob.glob(path_to_genomes))
 
     if flag_deduplicate:
@@ -86,15 +86,18 @@ def generate_multifasta(path_to_genomes, outfile, flag_deduplicate = True):
 
 
 #------------------------ Function to generate the database from the multifasta file
-def generate_db(multifasta, out_db):
+def generate_db(multifasta, log_dir, out_db):
     """
     Generates a BLAST database from a multifasta file.
 
     Args
     ------
     multifasta (str): Path to the multifasta file.
+    log_dir (str): Path to the log directory.
     out_db (str): Path where the database will be saved.
     """
+    # Path to a log file (to store errors)
+    log_file = os.path.join(log_dir, "makeblastdb_errors.log")
     # The output directory is created to avoid errores
     os.makedirs(out_db, exist_ok=True)
     # Command to execute makeblastdb
@@ -102,13 +105,18 @@ def generate_db(multifasta, out_db):
                        "-dbtype", "nucl", # nucleotides database
                        "-out", out_db, 
                        "-parse_seqids"] # To include the sequence identifiers in the database
-    print(f"Executing: \n{shlex.join(makeblastdb_cmd)}")
+    print("Generating BLAST database...\n")
+    print(f"Executing: \n{shlex.join(makeblastdb_cmd)}\n")
     # Execute the command
     try:
         subprocess.run(makeblastdb_cmd, 
                        check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
-        print(f"Error executing makeblastdb:\n{e.stderr}")
+        print(f"Error executing makeblastdb.\nDetails in {log_file}.")
+        # Error stored into the log file
+        with open(log_file, "a") as file:
+            file.write("-------------- makeblastdb log --------------\n")
+            file.write(f"{e.stderr}\n")
         return
     
     return

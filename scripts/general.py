@@ -66,9 +66,10 @@ if __name__ == "__main__":
             exit(0)
 
         generate_multifasta(path_to_genomes = f"{genomes_dir}/*/*/ncbi_dataset/data/*/*.fna",
-                                outfile = multifasta_path)
+                            outfile = multifasta_path)
         generate_db(multifasta = multifasta_path,
-                        out_db = f"{genomes_dir}/db/db")
+                    log_dir = log_dir,
+                    out_db = f"{genomes_dir}/db/db")
 
             
     query_file = "data/Int1/Int1_Pc_pattern.fa"
