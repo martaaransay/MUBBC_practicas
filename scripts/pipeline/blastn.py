@@ -138,9 +138,10 @@ def extract_hit_sequences(hits_df):
     return hits_df
 
 def process_hits(tsv_path, dir_genomes, multifasta, 
-                 min_length = 1000, extra_columns = {}):
+                 remove_files = True, min_length = 700, 
+                 extra_columns = {}):
     """
-    Parses the BLAST results, removes the genomes without hits and extracts the
+    Parses the BLAST results, if wanted removes the genomes without hits and extracts the
     sequences of the remaining hits.
 
     Args
@@ -148,8 +149,10 @@ def process_hits(tsv_path, dir_genomes, multifasta,
     tsv_path (str): The path to the BLAST tabular output file.
     dir_genomes (str): The path to the directory containing one subdirectory per genome.
     multifasta (str): The path to the multifasta file used as BLAST database source.
-    min_length (int): Minimum length of hits to be considered.
-                      Default to 1000.
+    remove_files (bool, optional): Flag to remove generated files
+                                   Default to True.
+    min_length (int, optional): Minimum length of hits to be considered.
+                                Default to 700.
     extra_columns (dict, optional): Extra columns to add, as {name: path in the JSON}.
                                     Defaults to {}}.
 
@@ -175,17 +178,18 @@ def process_hits(tsv_path, dir_genomes, multifasta,
     # For each genome_dir in hits_df, os.path.basename gets the genome accession (filename)
     hits_df["genome"] = hits_df["genome_dir"].map(os.path.basename)
 
-    # Genomes without any hit are removed from disk
-    all_genomes = set(contig2genome.values()) # Set of all genome directories
-    genomes_with_hit = set(hits_df["genome_dir"]) # Set of genome directories that have at least one hit
-    
-    to_delete = sorted(all_genomes - genomes_with_hit) # Set of genome directories without hits
+    if remove_files:
+        # Genomes without any hit are removed from disk
+        all_genomes = set(contig2genome.values()) # Set of all genome directories
+        genomes_with_hit = set(hits_df["genome_dir"]) # Set of genome directories that have at least one hit
+        
+        to_delete = sorted(all_genomes - genomes_with_hit) # Set of genome directories without hits
 
-    for each_del in to_delete: # Iterates over the genome directories to delete
-        shutil.rmtree(each_del) # Remove the directory and all its contents
-    # Removes multifasta file
-    os.remove(multifasta)
-    
+        for each_del in to_delete: # Iterates over the genome directories to delete
+            shutil.rmtree(each_del) # Remove the directory and all its contents
+        # Removes multifasta file
+        os.remove(multifasta)
+        
     # Select and reorder the columns needed for the sequence extraction
     columns_to_keep = ["genome", "genome_dir", "seq_id", "start", "end", "strand"]
     hits_df = hits_df[columns_to_keep] # Keep only the relevant columns
