@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # Directory where results will be saved
     results_dir = "results/Ecoli_complete" 
     # Directory where logs will be saved
-    log_dir = f"{results_dir}/log"
+    log_dir = f"{results_dir}/logs"
 
     # Flag to check if the database is already created:
     #### If False, the generation of the database is included in the pipeline

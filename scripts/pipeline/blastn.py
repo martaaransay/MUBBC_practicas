@@ -46,7 +46,8 @@ def run_blastn(query, output, db, log_dir, max_target, evalue_threshold = 10):
     
     start = time.time() # Start time to measure execution time
     # Execute the command and handle errors
-    print(f"Executing: \n{shlex.join(blast_cmd)}")
+    print("---- BLASTn ----")
+    print(f"Executing: \n{shlex.join(blast_cmd)}\n")
     try:
         subprocess.run(blast_cmd, 
                        check = True, capture_output = True, text = True)

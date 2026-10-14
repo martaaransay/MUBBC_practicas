@@ -278,7 +278,7 @@ def plot_pc_by_species(csv_path,
     
     df = pd.read_csv(csv_path)
     df.columns = df.columns.str.strip() # Removes spaces from the column names
-
+    
     # Cross table: number of occurrences of each Pc variant in each species
     count_table = pd.crosstab(df["Pc_variant"], df["species"])
 

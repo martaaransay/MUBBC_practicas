@@ -342,8 +342,8 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
                     *taxon_acc_flag(source, name), 
                     "--dehydrated", "--filename", 
                     filename, *flags]
-    
-    print(f"Executing: \n{shlex.join(download_cmd)}")
+    print("Downloading (dehydrated) genomes...\n")
+    print(f"Executing: \n{shlex.join(download_cmd)}\n")
     for n in range(1, n_tries + 1):
         try:
             subprocess.run(download_cmd, 
@@ -358,7 +358,7 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
                 file.write(f"try {n}/{n_tries}")
                 file.write("----------------------------------------------------")
                 file.write(f"{e.stderr}\n")
-                
+
             # The created directories are removed (provided they are completely empty)
             if n == n_tries:
                 if out_dir and os.path.exists(out_dir):

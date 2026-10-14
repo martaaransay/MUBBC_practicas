@@ -20,4 +20,4 @@ count_table = plot_pc_by_species(csv_path = csv_path,
 
 print(count_table)
 # Saves results to csv
-count_table.to_csv(f"{outdir}/count_table.csv", index=False)
+count_table.to_csv(f"{outdir}/count_table.csv")
