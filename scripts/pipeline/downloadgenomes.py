@@ -110,7 +110,8 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
                            min_completeness = 90,
                            target_num = None,
                            seed = 1,
-                           flags = None): 
+                           flags = None,
+                           only_target_num = False): 
     """
     Queries genome metadata in NCBI datasets, filters by quality metrics, and saves valid accessions in a text file.
     
@@ -131,14 +132,18 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
     seed (int, optional): Seed for random sampling of genomes if target_num is specified.
     flags (list, optional): List of additional flags to add to the 'datasets summary' command. 
                             Default is None.
+    only_target_num (bool, optional): Flag to only filter genomes by number (NOT quality metrics).
+                                      Default is False.
 
     Return
     --------------
     accessions_tuple (tuple): Tuple with the generated file name if there are genomes that pass the filters
                               None if there are no valid results.
     """
-    print("Filtering by quality metrics genomes.")
-
+    if not only_target_num:
+        print("Filtering genomes by quality metrics genomes...\n")
+    else:
+        print(f"Filtering genomes by its number (total: {target_num})...\n")
     # Path to a log file (to store errors)
     log_file = os.path.join(log_dir, "datasets_summary_errors.log")
 
@@ -169,22 +174,30 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
                 if not line.strip(): continue # Skips empty lines
                 datos = json.loads(line) # Deserialization
                 acc = datos.get("accession") # Get the accession
-                    
-                # Quality metrics:
-                #------------------- N50
-                assembly_stats = datos.get("assembly_stats", {}) # Get stats (if not present, empty dict)
-                n50 = assembly_stats.get("scaffold_n50", 0)
-                
-                #------------------- CheckM info
-                checkm_info = datos.get("checkm_info", {})
-                # If there is no checkm info, the default values are set
-                # Contamination 
-                contamination = checkm_info.get("contamination", 5) 
-                # Completeness
-                completeness = checkm_info.get("completeness", 90) 
 
-                # Check if it meets the selected filters 
-                if n50 >= min_n50 and contamination <= max_contamination and completeness >= min_completeness:
+                if only_target_num:
+                    # No quality filter (every genome is valid)
+                    passes_filters = True
+                else:
+                    # Quality metrics:
+                    #------------------- N50
+                    assembly_stats = datos.get("assembly_stats", {}) # Get stats (if not present, empty dict)
+                    n50 = assembly_stats.get("scaffold_n50", 0)
+                    
+                    #------------------- CheckM info
+                    checkm_info = datos.get("checkm_info", {})
+                    # If there is no checkm info, the default values are set
+                    # Contamination 
+                    contamination = checkm_info.get("contamination", 5) 
+                    # Completeness
+                    completeness = checkm_info.get("completeness", 90) 
+
+                    # Check if it meets the selected filters 
+                                        
+                    passes_filters = (n50 >= min_n50 
+                                      and contamination <= max_contamination 
+                                      and completeness >= min_completeness)
+                if passes_filters:
                     valid_accs.append(acc)
                     # If the number of accessions exceeds twice the target number, terminate the process to avoid unnecessary processing
                     if target_num and len(valid_accs) >= (target_num * 2): # twice to allow random sampling
@@ -192,7 +205,9 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
                         process.terminate() # Stop the process
                         break
 
+
             process.wait() # Wait for the process to finish
+            
         if process.returncode != 0 and not control_stop:
             print(f"Error executing datasets summary.\nDetails in {log_file}.")
             return
@@ -219,7 +234,7 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
     with open(accs_file_path, "w") as f: # Create a file with the valid accs (one per line)
         for each_acc in valid_accs:
             f.write(f"{each_acc}\n")
-        print(f"The accessions to be analyzed have been saved in the file '{accs_file_path}'.")
+        print(f"The accessions to be analyzed have been saved in the file '{accs_file_path}'.\n")
 
     accessions_tuple = ("inputfile", accs_file_path)
 
@@ -281,7 +296,6 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
                      log_dir,
                      quality_filter_flag = False, # Flag to filter by quality metrics is needed
                      filename = "ncbi_dataset.zip", # Name of the file that will contain the genomes 
-                                                  # Can have a path to specify a target directory
                      flags = None, # Flags for the datasets command
                      target_num = None,
                      seed = 1,
@@ -319,12 +333,21 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
     out_dir = os.path.dirname(filename)
     if out_dir: # Prevents errors if the path has no folders 
         os.makedirs(out_dir, exist_ok=True) 
-    if target_num:
-        quality_filter_flag = True
+
+    # To only filter the number of downloaded genomes and not by its quality metrics
+    if target_num and not quality_filter_flag:
+        only_target_num = True
+        filter_result = quality_filter_genomes(source, name, filename, # Executes the filtering function
+                                               target_num = target_num, 
+                                               seed = seed, flags = flags,
+                                               log_dir = log_dir,
+                                               only_target_num = only_target_num) 
+
     if quality_filter_flag:
         filter_result = quality_filter_genomes(source, name, filename, # Executes the filtering function
                                                target_num = target_num, 
-                                               seed = seed, flags = flags) 
+                                               seed = seed, flags = flags,
+                                               log_dir = log_dir) 
         if not filter_result: # If there is no accession, the datasets command cannot be used
             # The created directories are removed:
             if out_dir and os.path.exists(out_dir):

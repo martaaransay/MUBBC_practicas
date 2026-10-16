@@ -23,11 +23,16 @@ if __name__ == "__main__":
 
     # Flag to check if the database is already created:
     #### If False, the generation of the database is included in the pipeline
-    db_created = True
+    db_created = False
 
     # Flag to remove downloaded files (negative genomes, db and multifasta)
     #### If False, the files are not removed
     remove_files = False
+
+  
+    # Flag to filter genomes by quality metrics
+    #### If True, executes quality_filter_genomes() function.
+    quality_filter_flag = False
 
     #### ------------------------------------------------------- PIPELINE
     genomes_dir = f"{data_dir}/Ecoli_complete"
@@ -57,7 +62,8 @@ if __name__ == "__main__":
                                         outdir = genomes_dir, 
                                         flags = flags,
                                         log_dir = log_dir,
-                                        target_num = n_genomes)
+                                        target_num = n_genomes,
+                                        quality_filter_flag = quality_filter_flag)
         
         failed = process_all(dirs, log_dir, total_workers=30, n_split=500)
         
@@ -89,7 +95,8 @@ if __name__ == "__main__":
                            dir_genomes = genomes_dir,
                            multifasta = multifasta_path,
                            min_length = 1000,
-                           extra_columns = extra_columns)
+                           extra_columns = extra_columns,
+                           remove_files=remove_files)
 
     for hit in hits_df.to_dict("records"):
         # Classify each sequence to a defined Pc variant

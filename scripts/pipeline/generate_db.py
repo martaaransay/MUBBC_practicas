@@ -11,7 +11,7 @@ from pipeline.useful_funct import unique_genome_files
 
 # --------Definition of functions
 #------------------------ Function to download genomes for specific species
-def download_species_genomes(species, outdir, flags, log_dir, target_num = None):
+def download_species_genomes(species, outdir, flags, log_dir, quality_filter_flag = False ,target_num = None):
     """
     Uses the download_genomes function to download genomes for each species in the species dictionary.
     
@@ -21,8 +21,10 @@ def download_species_genomes(species, outdir, flags, log_dir, target_num = None)
     outdir (str): The output directory where genomes will be downloaded.
     flags (dict): Flags for the genome download.
     log_dir (str): Directory where logs will be saved.
-    target_num (int): The target number of genomes to download for each species.
-                      Default to None.
+    quality_filter_flag (bool, opt): If evaluates to True, executes quality_filter_genomes() function.
+                                     Default is False.
+    target_num (int, opt): The target number of genomes to download for each species.
+                           Default to None.
 
     Returns
     -------
@@ -40,7 +42,7 @@ def download_species_genomes(species, outdir, flags, log_dir, target_num = None)
             dir = download_genomes(source = "taxon",
                             name = long_name, # Species to download
                             log_dir = log_dir,
-                            quality_filter_flag = True,
+                            quality_filter_flag = quality_filter_flag,
                             filename = path,
                             flags = flags,
                             target_num = target_num # number of genomes to download
@@ -49,7 +51,7 @@ def download_species_genomes(species, outdir, flags, log_dir, target_num = None)
             dir = download_genomes(source = "taxon",
                             name = long_name, # Species to download
                             log_dir = log_dir,
-                            quality_filter_flag = True,
+                            quality_filter_flag = quality_filter_flag,
                             filename = path,
                             flags = flags)
         dirs[short_name] = dir
