@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib_venn import venn3
 from matplotlib_venn.layout.venn3 import DefaultLayoutAlgorithm
 from matplotlib.patches import Patch
+import seaborn as sns
+
 
 # Plotting
 
@@ -63,8 +65,8 @@ def plot_bitscore(bitscore_data, labels,
     # Creates the boxplot with the data and labels defined
     ax.boxplot(bitscore_data, tick_labels=labels)
     # Adjusting labels / title:
-    ax.set_ylabel("BitScore") # Y label
-    ax.set_title(title) # Title of the plot
+    ax.set_ylabel("BitScore", fontweight = "bold") # Y label
+    ax.set_title(title, fontweight = "bold", fontsize = 14) # Title of the plot
     plt.xticks(rotation=20) # Rotates the x-axis labels
     plt.tight_layout() # Adjusts the layout to avoid overlapping
     # Saves the plot
@@ -111,13 +113,14 @@ def plot_evalue_thresholds(dfs, times,
         axes[1].plot(evalues, n_unique, label = label, color = color)
 
     for ax in axes:
-        ax.set_xscale("log")
-        ax.set_xlabel("E-value threshold")
+        ax.set_xscale("log", fontweigth = "bold")
+        ax.set_xlabel("E-value threshold", fontweigth = "bold")
         ax.legend()
-    axes[0].set_ylabel("Total hits")
-    axes[1].set_ylabel("Unique hits (seq_id)")
+    
+    axes[0].set_ylabel("Total hits", fontweigth = "bold")
+    axes[1].set_ylabel("Unique hits (seq_id)", fontweigth = "bold")
 
-    fig.suptitle(title)
+    fig.suptitle(title, fontweight = "bold", fontsize = 14)
     fig.tight_layout()
     fig.savefig(os.path.join(outdir, filename))
     plt.close(fig)
@@ -281,16 +284,19 @@ def plot_pc_by_species(csv_path,
     
     # Cross table: number of occurrences of each Pc variant in each species
     count_table = pd.crosstab(df["Pc_variant"], df["species"])
+    
+    n_species = len(count_table.columns) # number of species to plot
 
     fig, ax = plt.subplots(figsize = (12, 7))
+    
     # Colors to plot
-    colors = ["#984FB3", "#AAAA00", "#FF5733", "#FF8D1A", 
-              "#FFE400", "#FF96E8", "#96FFE5", "#4F80B3"]
+    colors = sns.color_palette("husl", n_species)
+    
     # Stacked bars (one color per species)
     count_table.plot(kind = "bar", stacked = True, ax = ax,
-                     color = colors[:len(count_table.columns)], 
+                     color = colors,
                      edgecolor = "black")
-
+ 
     ax.set_xlabel("Pc variant")
     ax.set_ylabel("Count")
     ax.set_title(title)
