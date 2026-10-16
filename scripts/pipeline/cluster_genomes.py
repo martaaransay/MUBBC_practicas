@@ -229,6 +229,7 @@ def cluster_genomes(genomes_paths,
     
     return new_out_dir
     
+    
     """
     #FIXME: Creo que esta parte de abajo ahora sobra 
     
