@@ -60,7 +60,7 @@ def run_checkm2(genomes_paths, out_dir, log_dir,
         print(f"Error executing checkm2 predict.\nDetails in {log_file}.")
         # Error stored into the log file
         with open(log_file, "a") as file:
-            file.write("-------------- checkm2 log --------------")
+            file.write("-------------- checkm2 log --------------\n")
             file.write("\n")
             file.write(f"{e.stderr}\n")
         return None

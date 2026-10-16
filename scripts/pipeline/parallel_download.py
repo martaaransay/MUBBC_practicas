@@ -123,12 +123,13 @@ def processing(directory, log_dir, n_split = 100,
                 success = True
                 break
             except subprocess.CalledProcessError as e:
-                print(f"Error executing datasets rehydrate on try {n}/{n_tries}.\nDetails in {log_file}.")
+                print(f"\nError executing datasets rehydrate on a concrete split on try {n}/{n_tries}.\
+                        \nDetails in {log_file}.\n")
                 # Error stored into the log file
                 with open(log_file, "a") as file:
-                    file.write("-------------- datasets rehydrate log --------------")
-                    file.write(f"try {n}/{n_tries}")
-                    file.write("----------------------------------------------------")
+                    file.write("-------------- datasets rehydrate log --------------\n")
+                    file.write(f"try {n}/{n_tries}\n")
+                    file.write("----------------------------------------------------\n")
                     file.write(f"{e.stderr}\n")
                 
         if not success: 

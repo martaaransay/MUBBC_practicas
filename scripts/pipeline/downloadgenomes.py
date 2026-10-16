@@ -211,6 +211,8 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
         if process.returncode != 0 and not control_stop:
             print(f"Error executing datasets summary.\nDetails in {log_file}.")
             return
+        else: # If no errors, the log file is removed
+            os.remove(log_file)
         
     except Exception as e: 
         print(f"Error executing datasets summary because python failed.\nDetails:\n{e}.")
@@ -377,9 +379,9 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
             print(f"Error executing datasets download on try {n}/{n_tries}.\nDetails in {log_file}.")
             # Error stored into the log file
             with open(log_file, "a") as file:
-                file.write("-------------- datasets download log --------------")
-                file.write(f"try {n}/{n_tries}")
-                file.write("----------------------------------------------------")
+                file.write("-------------- datasets download log --------------\n")
+                file.write(f"try {n}/{n_tries}\n")
+                file.write("----------------------------------------------------\n")
                 file.write(f"{e.stderr}\n")
 
             # The created directories are removed (provided they are completely empty)
