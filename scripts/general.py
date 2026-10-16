@@ -91,6 +91,7 @@ if __name__ == "__main__":
                 
         generate_multifasta(path_to_genomes = path_to_genomes,
                             outfile = multifasta_path)
+        
         generate_db(multifasta = multifasta_path,
                     log_dir = log_dir,
                     out_db = f"{genomes_dir}/db/db")
