@@ -60,8 +60,7 @@ if __name__ == "__main__":
         #         "Enterobacter" : "Enterobacter"}
         
         ecoli = {"Ecoli" : "Escherichia coli"}
-        ## For downloading normal genomes --> download_genomes() directly
-        
+
         dirs = download_species_genomes(species = ecoli, 
                                         outdir = genomes_dir, 
                                         flags = flags,

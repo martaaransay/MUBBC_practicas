@@ -2,6 +2,7 @@
 import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed 
+from tqdm import tqdm
 
 
 # --------Definition of functions
@@ -66,7 +67,8 @@ def splitting_fetch_file(recovery_file, n_split = 100):
 
 #------------------------ Function to execute datasets rehydrate of a splitted fetch file
 def processing(directory, log_dir, n_split = 100, 
-               max_workers = 18, n_tries = 5):
+               max_workers = 18, n_tries = 5,
+               position = 0, lab = None):
     """
     Processes the genome downloads in chunks.
 
@@ -77,13 +79,18 @@ def processing(directory, log_dir, n_split = 100,
     n_split (int): The number of genomes to download per batch.
     max_workers (int): Number of concurrent connections for the datasets tool.
     n_tries (int): Maximum number of execution attempts per chunk.
+    position (int, opt): Row of the progress bar (needed when several run in parallel).
+                         Default to 0.
+    lab (str, opt): Label of the progress bar.
+                    Default to None.
         
     Return
     ------
     bool: True if the entire directory was processed successfully.
           False if it failed.
     """
-    print("Rehydrating genomes...")
+    print("-------------------- Rehydrating genomes --------------------")
+
     # Directory where is the fetch file
     fetch_directory = os.path.join(directory, "ncbi_dataset")
     # Creates the recovery file
@@ -104,6 +111,22 @@ def processing(directory, log_dir, n_split = 100,
                      "--directory", directory, # Directory to store genomes
                      "--max-workers", str(max_workers)] # Number of workers
 
+    # Total number of lines to process (for the progress bar)
+    with open(recovery_file, "r") as file:
+        total = 0
+        for _ in file:
+            total += 1
+
+    n_failed = 0
+    if not lab: # If no lab provided, name of the directory
+        lab = os.path.basename(directory)
+    
+    pbar = tqdm(total = total, # Total number of files to process
+                desc = lab, # Label of the bar
+                position = position, # Row where the bar is drawn to avoid overlapping between threads
+                unit = "files",  # Unit shown in the speed (files/s)
+                leave = True) # Keeps the bar on screen when it finishes
+
     while True:
         # Split the fetch file
         splitted, recovery = splitting_fetch_file(recovery_file, n_split)
@@ -116,15 +139,15 @@ def processing(directory, log_dir, n_split = 100,
         success = False # Flag to check succession
         # Control to avoid rehydrate errors: In case of error, tries again the rehydratation
         for n in range(1, n_tries + 1):
+
             try:
-                print("Continue rehydrating...")
                 subprocess.run(rehydrate_cmd, 
                                check=True, capture_output=True, text=True)
                 success = True
                 break
             except subprocess.CalledProcessError as e:
-                print(f"\nError executing datasets rehydrate on a concrete split on try {n}/{n_tries}.\
-                        \nDetails in {log_file}.\n")
+                tqdm.write(f"Error executing datasets rehydrate on a concrete split on try {n}/{n_tries}.\
+                             Details in {log_file}.")
                 # Error stored into the log file
                 with open(log_file, "a") as file:
                     file.write("-------------- datasets rehydrate log --------------\n")
@@ -133,14 +156,18 @@ def processing(directory, log_dir, n_split = 100,
                     file.write(f"{e.stderr}\n")
                 
         if not success: 
-            print(f"Chunk failed after {n_tries} tries.")
+            tqdm.write(f"Chunk failed after {n_tries} tries.")
+            n_failed += len(splitted)
+            pbar.set_postfix(failed = n_failed) # Shows failed files in the bar
             with open(failed_file, "a") as f:
                 f.writelines(splitted)
         
         # Writes the rest of the lines into the recovery file
         with open(recovery_file, "w") as f:
             f.writelines(recovery)
+        pbar.update(len(splitted)) # Advance the bar
 
+    pbar.close()
     # If there were failed splits, writes them into the failed file to continue the execution
     if os.path.isfile(failed_file):
         print(f">>> WARNING: failed splits in '{directory}'.")
@@ -179,9 +206,11 @@ def process_all(dirs, log_dir, total_workers = 18,
 
         # Queue one task per specie
         tasks = {}  # Dictionary to store the tasks for each specie
-        for specie, directory in dirs.items():
+        for idx, (specie, directory) in enumerate(dirs.items()):
+
             # Submit executes the function using a free thread
-            fut_task = executor.submit(processing, directory, log_dir, n_split, per_dir, n_tries)
+            fut_task = executor.submit(processing, directory, log_dir, n_split, per_dir, n_tries,
+                                       idx, specie)
             # fut_task is a "Future"
             # Stores the task and its specie
             tasks[fut_task] = specie

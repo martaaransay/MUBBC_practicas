@@ -9,7 +9,7 @@ import glob
 def run_checkm2(genomes_paths, out_dir, log_dir,
                 genome_ext = "fna", 
                 lowmem = None, 
-                threads = os.cpu()- 2):
+                threads = os.cpu_count() - 2):
     """
     Executes CheckM2 predict to assess the quality of genomes using a conda environment.
 
@@ -115,7 +115,7 @@ def cluster_genomes(genomes_paths,
                     output_dir, 
                     log_dir,
                     threshold = 0.99,
-                    threads = os.cpu() - 2,
+                    threads = os.cpu_count() - 2,
                     length = 50000,
                     completeness = 75,
                     contamination = 25,

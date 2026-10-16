@@ -19,3 +19,4 @@ dependencies:
   - blast
   - hmmer
   - conda-forge::matplotlib-venn
+  - conda-forge::tqdm

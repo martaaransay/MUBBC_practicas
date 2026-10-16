@@ -339,17 +339,17 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
     # To only filter the number of downloaded genomes and not by its quality metrics
     if target_num and not quality_filter_flag:
         only_target_num = True
+        quality_filter_flag = True
+    else:
+        only_target_num = False
+        
+    if quality_filter_flag:
+
         filter_result = quality_filter_genomes(source, name, filename, # Executes the filtering function
                                                target_num = target_num, 
                                                seed = seed, flags = flags,
                                                log_dir = log_dir,
                                                only_target_num = only_target_num) 
-
-    if quality_filter_flag:
-        filter_result = quality_filter_genomes(source, name, filename, # Executes the filtering function
-                                               target_num = target_num, 
-                                               seed = seed, flags = flags,
-                                               log_dir = log_dir) 
         if not filter_result: # If there is no accession, the datasets command cannot be used
             # The created directories are removed:
             if out_dir and os.path.exists(out_dir):

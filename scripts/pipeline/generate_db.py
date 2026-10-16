@@ -35,25 +35,19 @@ def download_species_genomes(species, outdir, flags, log_dir, quality_filter_fla
     dirs = {}
     # Iterates over the dictionary
     for short_name, long_name in species.items():
+        print(f"-------------------- Downloading dehydrated genomes of: {long_name} --------------------")
         # Generates the path to save the genomes
         path = os.path.join(outdir, short_name, f"{short_name}.zip")
         # Executes download function
-        if target_num:
-            dir = download_genomes(source = "taxon",
-                            name = long_name, # Species to download
-                            log_dir = log_dir,
-                            quality_filter_flag = quality_filter_flag,
-                            filename = path,
-                            flags = flags,
-                            target_num = target_num # number of genomes to download
+        dir = download_genomes(source = "taxon",
+                               name = long_name, # Species to download
+                               log_dir = log_dir,
+                               quality_filter_flag = quality_filter_flag,
+                               filename = path,
+                               flags = flags,
+                               target_num = target_num # number of genomes to download
             )
-        else:
-            dir = download_genomes(source = "taxon",
-                            name = long_name, # Species to download
-                            log_dir = log_dir,
-                            quality_filter_flag = quality_filter_flag,
-                            filename = path,
-                            flags = flags)
+
         dirs[short_name] = dir
 
     return dirs
