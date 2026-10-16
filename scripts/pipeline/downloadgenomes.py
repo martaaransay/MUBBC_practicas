@@ -207,7 +207,7 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
 
 
             process.wait() # Wait for the process to finish
-            
+
         if process.returncode != 0 and not control_stop:
             print(f"Error executing datasets summary.\nDetails in {log_file}.")
             return
@@ -234,7 +234,7 @@ def quality_filter_genomes(source, name, # Arguments for the taxon_acc_flag(sour
     with open(accs_file_path, "w") as f: # Create a file with the valid accs (one per line)
         for each_acc in valid_accs:
             f.write(f"{each_acc}\n")
-        print(f"The accessions to be analyzed have been saved in the file '{accs_file_path}'.\n")
+        print(f"\nThe accessions to be analyzed have been saved in the file '{accs_file_path}'.\n")
 
     accessions_tuple = ("inputfile", accs_file_path)
 
@@ -274,7 +274,7 @@ def unzip(log_dir, filename = "ncbi_dataset.zip"):
                  "-o", # Overwrite files to avoid errors
                  filename,
                  "-d", target_dir] # Directory where it is unzipped
-    print("Unzipping the downloaded genomes.\n")
+    print("Unzipping the downloaded genomes...\n")
     print(f"Executing: \n{shlex.join(unzip_cmd)}\n")
     try:
         subprocess.run(unzip_cmd, 
@@ -365,7 +365,7 @@ def download_genomes(source, name, # Arguments for the taxon_acc_flag(source, na
                     *taxon_acc_flag(source, name), 
                     "--dehydrated", "--filename", 
                     filename, *flags]
-    print("Downloading (dehydrated) genomes...\n")
+    print("Downloading (dehydrated) genomes...")
     print(f"Executing: \n{shlex.join(download_cmd)}\n")
     for n in range(1, n_tries + 1):
         try:

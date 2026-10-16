@@ -9,7 +9,7 @@ import glob
 def run_checkm2(genomes_paths, out_dir, log_dir,
                 genome_ext = "fna", 
                 lowmem = None, 
-                threads = 4):
+                threads = os.cpu()- 2):
     """
     Executes CheckM2 predict to assess the quality of genomes using a conda environment.
 
@@ -23,16 +23,16 @@ def run_checkm2(genomes_paths, out_dir, log_dir,
     lowmem (bool, optional): If provided and evaluates to True, runs CheckM2 in low memory mode. 
                              Defaults to None.
     threads (int, optional): Number of threads to use for the CheckM2 execution. 
-                             Defaults to 4.
+                             Defaults to the number of CPU - 2.
 
     Return:
     ------
     checkm2_report (str or None): The complete path to the generated 'quality_report.tsv' file. 
                                   Returns None if an error occurs during execution.
     """
-    #FIXME: poner en el readme o así del script la creación del entorno conda:
-    # subprocess.run(["conda", "create", "-n", "checkm2", "-c", "conda-forge", "checkm2", "-y"], check=True)
-    ## FIXME: Y TMB LA DATABASE DE DIAMOND
+    # FIXME: poner en el readme o así del script la creación del entorno conda:
+    # subprocess.run(["conda", "create", "-n", "checkm2", "-c", "bioconda", "-c", "conda-forge", "checkm2", "-y"], check=True)
+    ## y también hay que descargarse al base de datos:
     # subprocess.run(["conda", "run", "-n", "checkm2", "checkm2", "database", "--download"], check=True)
     
     # Path to a log file (to store errors)
@@ -71,7 +71,9 @@ def run_checkm2(genomes_paths, out_dir, log_dir,
     return checkm2_report
 
 #------------------------ Function to adapt the quality report to use dRep (genome_info)
-def checkm2_to_genomeinfo(quality_report_tsv, genome_info_csv, genome_ext = "fna"):
+def checkm2_to_genomeinfo(quality_report_tsv, 
+                          genome_info_csv, 
+                          genome_ext = "fna"):
     """
     Converts a CheckM2 quality report TSV file into a dRep-compatible genome_info CSV file.
 
@@ -109,9 +111,11 @@ def checkm2_to_genomeinfo(quality_report_tsv, genome_info_csv, genome_ext = "fna
     return genome_info_csv
 
 #------------------------ Function to run dRep 
-def cluster_genomes(genomes_paths, adapted_file, log_dir,
+def cluster_genomes(genomes_paths, 
+                    output_dir, 
+                    log_dir,
                     threshold = 0.99,
-                    threads = 1,
+                    threads = os.cpu() - 2,
                     length = 50000,
                     completeness = 75,
                     contamination = 25,
@@ -124,12 +128,12 @@ def cluster_genomes(genomes_paths, adapted_file, log_dir,
     Args:
     ------
     genomes_paths (list): List of paths to the input genome files.
-    adapted_file (str): Reference file path used to determine the output directory structure.
+    output_dir (str): Directory were the results will be saved.
     log_dir (str): Directory where log files will be saved.
     threshold (float, optional): Average Nucleotide Identity (ANI) threshold for secondary clustering. 
                                  Defaults to 0.99.
     threads (int, optional): Number of threads to use for CheckM2 and dRep. 
-                             Defaults to 4.
+                             Defaults to max CPU - 2.
     length (int, optional): Minimum genome length in base pairs. 
                             Defaults to 50000.
     completeness (float/int, optional): Minimum genome completeness percentage. 
@@ -145,57 +149,61 @@ def cluster_genomes(genomes_paths, adapted_file, log_dir,
 
     Return:
     ------
-    genomes_path (str or None): A pattern path to the clustered genome files. 
-                                Returns None if an error occurs during CheckM2 or dRep execution.
+    new_out_dir (str or None): Path where the clustered genomes are saved.
+                               Returns None if an error occurs during CheckM2 or dRep execution.
     """
-    # Parental directory
-    parental_dir = adapted_file.replace("/ncbi_dataset/data", "") 
+
     # Path to a log file (to store errors)
     log_file = os.path.join(log_dir, "dRep_errors.log")
 
     # Name of the folder with the clustering threshold
     folder_name = f"clustering_{threshold}"
-    
-    # New path
-    out_dir = os.path.join(parental_dir, folder_name)
-
+    out_dir = os.path.join(output_dir, folder_name)
     # Create the output directory to avoid errors
     os.makedirs(out_dir, exist_ok=True)
     
     # Set the output directory of CheckM2
     checkm2_out = os.path.join(out_dir, "checkm2")
+    
     # Execute CheckM2
     quality_report = run_checkm2(genomes_paths, 
                                  checkm2_out, 
                                  threads = threads)
+    
     # In case the quality report is not generated, exits
     if quality_report is None:
-        print("CheckM2 failed, aborting clustering.")
-        return
+        print("CheckM2 failed, aborting clustering...")
+        return None
 
     # Adapts the quality report tsv file to the needed csv file
     csv_file = os.path.join(out_dir, "genomeInfo.csv") # Path to the new csv
     genomeinfo_csv = checkm2_to_genomeinfo(quality_report,
                                            csv_file)
 
-    # Text file with paths to genomes 
-    # (instead of an expanded wildcard - recommended by dRep)
+    # Text file with paths to genomes (instead of an expanded wildcard, following the recommendation of dRep)
     genomes_list_file = os.path.join(out_dir, "genomes_list.txt")
-
     # Write the genome paths
     with open(genomes_list_file, "w") as f:
         for path in genomes_paths:
             f.write(path + "\n")
 
     # Command to execute dRep
-    dRep_cmd = ["dRep", "dereplicate", "-p", str(threads),
-                "-l", str(length), "-comp", str(completeness), "-con", str(contamination), 
-                "--genomeInfo", genomeinfo_csv, "--S_algorithm", "skani", 
-                "-sa", str(threshold), "-nc", str(cov_thresh), 
-                "--low_ram_primary_clustering", "--multiround_primary_clustering", 
-                "-g", genomes_list_file,  "--primary_chunksize", str(chunksize), 
-                "--run_tertiary_clustering", "--skip_plots",  out_dir
-                ]
+    dRep_cmd = ["dRep", "dereplicate", 
+                "-p", str(threads),
+                "-l", str(length), 
+                "-comp", str(completeness), 
+                "-con", str(contamination), 
+                "--genomeInfo", genomeinfo_csv, 
+                "--S_algorithm", "skani", 
+                "-sa", str(threshold), 
+                "-nc", str(cov_thresh), 
+                # "--low_ram_primary_clustering", 
+                # "--multiround_primary_clustering", 
+                "-g", genomes_list_file,  
+                # "--primary_chunksize", str(chunksize), 
+                # "--run_tertiary_clustering", 
+                "--skip_plots",  
+                out_dir]
     
     # In case more parameters for skani are needed
     if skani_extra: 
@@ -205,7 +213,8 @@ def cluster_genomes(genomes_paths, adapted_file, log_dir,
             dRep_cmd.extend(skani_extra)
 
     try:
-        subprocess.run(dRep_cmd, capture_output=True, text=True, check=True)
+        subprocess.run(dRep_cmd, 
+                       capture_output=True, text=True, check=True)
 
     except subprocess.CalledProcessError as e:
         print(f"Error executing dRep dereplicate.\nDetails in {log_file}.")
@@ -215,9 +224,18 @@ def cluster_genomes(genomes_paths, adapted_file, log_dir,
             file.write("\n")
             file.write(f"{e.stderr}\n")
         return
+
+    new_out_dir = os.path.join(out_dir, "dereplicated_genomes")
+    
+    return new_out_dir
+    
+    """
+    #FIXME: Creo que esta parte de abajo ahora sobra 
+    
     
     # Get the new paths to the clustered genome files
     genomes_path = os.path.join(out_dir, "dereplicated_genomes", "*.fna")
     genomes_path_glob = sorted(glob.glob(genomes_path))
 
     return genomes_path_glob
+    """

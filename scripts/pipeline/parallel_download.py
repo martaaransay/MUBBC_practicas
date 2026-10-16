@@ -83,6 +83,7 @@ def processing(directory, log_dir, n_split = 100,
     bool: True if the entire directory was processed successfully.
           False if it failed.
     """
+    print("Rehydrating genomes...")
     # Directory where is the fetch file
     fetch_directory = os.path.join(directory, "ncbi_dataset")
     # Creates the recovery file
@@ -116,7 +117,7 @@ def processing(directory, log_dir, n_split = 100,
         # Control to avoid rehydrate errors: In case of error, tries again the rehydratation
         for n in range(1, n_tries + 1):
             try:
-                print("Rehydrating...")
+                print("Continue rehydrating...")
                 subprocess.run(rehydrate_cmd, 
                                check=True, capture_output=True, text=True)
                 success = True
@@ -131,7 +132,7 @@ def processing(directory, log_dir, n_split = 100,
                     file.write(f"{e.stderr}\n")
                 
         if not success: 
-            print(f"Chunk failed after {n_tries} tries")
+            print(f"Chunk failed after {n_tries} tries.")
             with open(failed_file, "a") as f:
                 f.writelines(splitted)
         
@@ -141,7 +142,7 @@ def processing(directory, log_dir, n_split = 100,
 
     # If there were failed splits, writes them into the failed file to continue the execution
     if os.path.isfile(failed_file):
-        print(f">>> WARNING: failed splits in {directory}")
+        print(f">>> WARNING: failed splits in '{directory}'.")
         os.replace(failed_file, recovery_file)
         return False
     return True 

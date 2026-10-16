@@ -2,10 +2,11 @@ import os
 # Import functions from the pipeline module 
 from pipeline.downloadgenomes import datasets_flags, download_genomes
 from pipeline.generate_db import download_species_genomes, generate_multifasta, generate_db
-from pipeline.useful_funct import contig_to_genome
+from pipeline.useful_funct import contig_to_genome, list_fasta_files
 from pipeline.parallel_download import process_all
 from pipeline.blastn import run_blastn, process_hits
 from pipeline.analyze_Pc import classify_pc_regex, info_to_csv
+from pipeline.cluster_genomes import cluster_genomes
 
 
 if __name__ == "__main__":
@@ -29,10 +30,13 @@ if __name__ == "__main__":
     #### If False, the files are not removed
     remove_files = False
 
-  
     # Flag to filter genomes by quality metrics
     #### If True, executes quality_filter_genomes() function.
     quality_filter_flag = False
+
+    # Flag to cluster genomes 
+    #### If True, cluster genomes by
+    cluster_genomes_flag = False
 
     #### ------------------------------------------------------- PIPELINE
     genomes_dir = f"{data_dir}/Ecoli_complete"
@@ -71,7 +75,22 @@ if __name__ == "__main__":
             print(f"Failed to rehydrate: {failed}")
             exit(0)
 
-        generate_multifasta(path_to_genomes = f"{genomes_dir}/*/*/ncbi_dataset/data/*/*.fna",
+        path_to_genomes = f"{genomes_dir}/*/*/ncbi_dataset/data/*/*.fna"
+        
+        if cluster_genomes_flag:
+            # List of the paths were the genomes are downloaded
+            paths = list_fasta_files(directory = results_dir,
+                                     depth = 5)
+            clustered_path = cluster_genomes(genomes_paths = paths,
+                                             output_dir = results_dir,
+                                             log_dir = log_dir)
+                            # threshold enables to change the similarity threshold to cluster
+            # If no errrors occured, the path is updated
+            if clustered_path:
+                path_to_genomes = f"{clustered_path}/*.fna"
+            
+                
+        generate_multifasta(path_to_genomes = path_to_genomes,
                             outfile = multifasta_path)
         generate_db(multifasta = multifasta_path,
                     log_dir = log_dir,
