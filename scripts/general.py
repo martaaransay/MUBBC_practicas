@@ -14,11 +14,11 @@ if __name__ == "__main__":
     # CHANGE THE PARAMETERS BEFORE THE EXECUTION:
 
     # OPTIONAL: number of genomes to download for each species
-    n_genomes = 100000 
+    n_genomes = 10
     # Directory where genomes will be stored
     data_dir = "../data"
     # Directory where results will be saved
-    results_dir = "results/Ecoli_complete" 
+    results_dir = "results/Ecoli_complete_clustered" 
     # Directory where logs will be saved
     log_dir = f"{results_dir}/logs"
 
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     # Flag to cluster genomes 
     #### If True, cluster genomes by
-    cluster_genomes_flag = False
+    cluster_genomes_flag = True
 
     #### ------------------------------------------------------- PIPELINE
     genomes_dir = f"{data_dir}/Ecoli_complete"
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         
         if cluster_genomes_flag:
             # List of the paths were the genomes are downloaded
-            paths = list_fasta_files(directory = results_dir,
+            paths = list_fasta_files(directory = genomes_dir,
                                      depth = 5)
             clustered_path = cluster_genomes(genomes_paths = paths,
                                              output_dir = results_dir,

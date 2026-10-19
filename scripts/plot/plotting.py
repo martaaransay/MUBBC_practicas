@@ -31,11 +31,11 @@ def plot_evalue(logdata, labels,
     
     fig, ax = plt.subplots(figsize=(7, 5)) # Creates axes for the plot
     # Creates the boxplot with the data and labels defined
-    ax.boxplot(logdata, tick_labels=labels) 
+    ax.boxplot(logdata, tick_labels = labels) 
     # Adjusting labels / title:
-    ax.set_ylabel("-log10(E-value)") # Y label
-    ax.set_title(title) # Title of the plot
-    plt.xticks(rotation=20) # Rotates the x-axis labels
+    ax.set_ylabel("-log10(E-value)", fontweight = "bold") # Y label
+    ax.set_title(title, fontweight = "bold", fontsize = 14) # Title of the plot
+    plt.xticks(rotation = 20) # Rotates the x-axis labels
     plt.tight_layout() # Adjusts the layout to avoid overlapping
     # Saves the plot
     plt.savefig(os.path.join(outdir, filename)) 
@@ -63,11 +63,11 @@ def plot_bitscore(bitscore_data, labels,
 
     fig, ax = plt.subplots(figsize=(7, 5)) # Creates axes for the plot
     # Creates the boxplot with the data and labels defined
-    ax.boxplot(bitscore_data, tick_labels=labels)
+    ax.boxplot(bitscore_data, tick_labels = labels)
     # Adjusting labels / title:
     ax.set_ylabel("BitScore", fontweight = "bold") # Y label
     ax.set_title(title, fontweight = "bold", fontsize = 14) # Title of the plot
-    plt.xticks(rotation=20) # Rotates the x-axis labels
+    plt.xticks(rotation = 20) # Rotates the x-axis labels
     plt.tight_layout() # Adjusts the layout to avoid overlapping
     # Saves the plot
     plt.savefig(os.path.join(outdir, filename))

@@ -34,7 +34,7 @@ def run_checkm2(genomes_paths, out_dir, log_dir,
     # subprocess.run(["conda", "create", "-n", "checkm2", "-c", "bioconda", "-c", "conda-forge", "checkm2", "-y"], check=True)
     ## y también hay que descargarse al base de datos:
     # subprocess.run(["conda", "run", "-n", "checkm2", "checkm2", "database", "--download"], check=True)
-    
+
     # Path to a log file (to store errors)
     log_file = os.path.join(log_dir, "cluster_checkm2_errors.log")
 
@@ -64,7 +64,7 @@ def run_checkm2(genomes_paths, out_dir, log_dir,
             file.write("\n")
             file.write(f"{e.stderr}\n")
         return None
-    
+   
     # Path to the checkm2 report
     checkm2_report = os.path.join(out_dir, "quality_report.tsv")
 
@@ -120,8 +120,7 @@ def cluster_genomes(genomes_paths,
                     completeness = 75,
                     contamination = 25,
                     skani_extra = None,
-                    cov_thresh = 0.1,
-                    chunksize = 500):
+                    cov_thresh = 0.1):
     """
     Executes genome clustering and dereplication using dRep (skani algorithm).
 
@@ -144,8 +143,7 @@ def cluster_genomes(genomes_paths,
                                          Defaults to None.
     cov_thresh (float, optional): Minimum alignment coverage threshold. 
                                   Defaults to 0.1.
-    chunksize (int, optional): Chunk size for multiround primary clustering. 
-                               Defaults to 500.
+
 
     Return:
     ------
@@ -166,8 +164,9 @@ def cluster_genomes(genomes_paths,
     checkm2_out = os.path.join(out_dir, "checkm2")
     
     # Execute CheckM2
-    quality_report = run_checkm2(genomes_paths, 
-                                 checkm2_out, 
+    quality_report = run_checkm2(genomes_paths = genomes_paths,
+                                 out_dir = checkm2_out,
+                                 log_dir = log_dir, 
                                  threads = threads)
     
     # In case the quality report is not generated, exits
@@ -179,7 +178,7 @@ def cluster_genomes(genomes_paths,
     csv_file = os.path.join(out_dir, "genomeInfo.csv") # Path to the new csv
     genomeinfo_csv = checkm2_to_genomeinfo(quality_report,
                                            csv_file)
-
+    print("file adapted")
     # Text file with paths to genomes (instead of an expanded wildcard, following the recommendation of dRep)
     genomes_list_file = os.path.join(out_dir, "genomes_list.txt")
     # Write the genome paths
@@ -204,7 +203,7 @@ def cluster_genomes(genomes_paths,
                 # "--run_tertiary_clustering", 
                 "--skip_plots",  
                 out_dir]
-    
+    print("drep!")
     # In case more parameters for skani are needed
     if skani_extra: 
         if isinstance(skani_extra, str): # Argument as a string
