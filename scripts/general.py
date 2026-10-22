@@ -1,4 +1,5 @@
 import os
+import time
 # Import functions from the pipeline module 
 from pipeline.downloadgenomes import datasets_flags, download_genomes
 from pipeline.generate_db import download_species_genomes, generate_multifasta, generate_db
@@ -11,17 +12,19 @@ from pipeline.cluster_genomes import cluster_genomes
 
 if __name__ == "__main__":
 
+    start = time.time() # Start time
     # CHANGE THE PARAMETERS BEFORE THE EXECUTION:
 
     # OPTIONAL: number of genomes to download for each species
-    n_genomes = 10
+    n_genomes = 10000
     # Directory where genomes will be stored
-    data_dir = "../data"
+    # data_dir = "/media/mba/4TB_disk/data"
+    data_dir = "/home/mba/Documents/AransayMarta/prueba"
     # Directory where results will be saved
     results_dir = "results/Ecoli_complete_clustered" 
     # Directory where logs will be saved
     log_dir = f"{results_dir}/logs"
-
+    log_time_file = os.path.join(log_dir, "times.log")
     # Flag to check if the database is already created:
     #### If False, the generation of the database is included in the pipeline
     db_created = False
@@ -36,7 +39,7 @@ if __name__ == "__main__":
 
     # Flag to cluster genomes 
     #### If True, cluster genomes by
-    cluster_genomes_flag = True
+    cluster_genomes_flag = False
 
     #### ------------------------------------------------------- PIPELINE
     genomes_dir = f"{data_dir}/Ecoli_complete"
@@ -51,7 +54,7 @@ if __name__ == "__main__":
         flags = datasets_flags(assembly_level="complete,chromosome,contig",
                                exclude_atypical=True,
                                mag=False)
-    
+
         # species to download
         # names = {"Ecoli" : "Escherichia coli", 
         #         "Klebsiella" : "Klebsiella pneumoniae",
@@ -67,7 +70,10 @@ if __name__ == "__main__":
                                         log_dir = log_dir,
                                         target_num = n_genomes,
                                         quality_filter_flag = quality_filter_flag)
-        
+        time_download = time.time() - start
+        with open(log_time_file, "a") as file:
+            file.write(f"Download species (dehydrate + rehydrate): {time_download}")
+
         failed = process_all(dirs, log_dir, total_workers=30, n_split=500)
         
         if failed: 
@@ -96,6 +102,11 @@ if __name__ == "__main__":
                     log_dir = log_dir,
                     out_db = f"{genomes_dir}/db/db")
 
+        time_multifasta_db = time.time() - time_download
+        with open(log_time_file, "a") as file:
+            file.write(f"Databases + multifasta: {time_multifasta_db}")
+
+"""
             
     query_file = "data/Int1/Int1_Pc_pattern.fa"
 
@@ -109,6 +120,12 @@ if __name__ == "__main__":
                            db = f"{genomes_dir}/db/db",
                            log_dir = log_dir,
                            max_target = len(contig_to_genome(genomes_dir))) # max num of seqs to keep: - mapping length
+    
+    if db_created:
+        time_multifasta_db = start
+    time_blastn = time.time() - time_multifasta_db
+    with open(log_time_file, "a") as file: 
+        file.write(f"Databases + multifasta: {time_multifasta_db}")
 
     hits_df = process_hits(result,
                            dir_genomes = genomes_dir,
@@ -137,3 +154,4 @@ if __name__ == "__main__":
         info_to_csv(row_info, f"{results_dir}/final.csv")
 
 
+"""

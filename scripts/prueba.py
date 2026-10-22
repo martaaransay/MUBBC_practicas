@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     # Flag to check if genomes are downloaded:
     #### If False, the download is included in the pipeline
-    genomes_downloaded = True
+    genomes_downloaded = False
     
     # Flag to check if the database is already created:
     #### If False, the generation of the database is included in the pipeline
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # Flag to cluster genomes 
     #### If True, cluster genomes by
-    cluster_genomes_flag = True
+    cluster_genomes_flag = False
 
     #### ------------------------------------------------------- PIPELINE
     # genomes_dir = f"{data_dir}/prueba"
@@ -62,8 +62,7 @@ if __name__ == "__main__":
         #         "Acinetobacter" : "Acinetobacter baumannii",
         #         "Enterobacter" : "Enterobacter"}
         
-        ecoli = {"Ecoli" : "Escherichia coli",
-                 "Klebsiella" : "Klebsiella pneumoniae"}
+        ecoli = {"Ecoli" : "Escherichia coli"}
         ## For downloading normal genomes --> download_genomes() directly
         
         dirs = download_species_genomes(species = ecoli, 
